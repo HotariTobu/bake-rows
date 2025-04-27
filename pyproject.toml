@@ -13,4 +13,5 @@ dependencies = [
     "sentence-transformers>=4.1.0",
     "streamlit>=1.44.1",
     "watchdog>=6.0.0",
+    "xlsxwriter>=3.2.3",
 ]
