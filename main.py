@@ -1,10 +1,16 @@
 import streamlit as st
 import polars as pl
 from pathlib import Path
+from io import BytesIO
 
 from lib import StateFactory
+from score import score_sentences
 
-IMPORT_DIALOG_STATE_KEY = "import_dialog_opened"
+IMPORT_DIALOG_STATE_KEY = "import-dialog-opened"
+EDITED_DF_STATE_KEY = "edited-df"
+
+SCORE_COL_NAME = "Score"
+REMOVE_COL_NAME = "Remove"
 
 
 def load_file(file) -> pl.DataFrame:
@@ -66,6 +72,15 @@ with StateFactory() as sf:
 
         st.dataframe(input_df, height=200)
 
+        top_percent = st.slider(
+            label="Top Percent",
+            min_value=0,
+            max_value=100,
+            value=5,
+            step=1,
+            format="%d%%",
+        )
+
         if not st.button("Import"):
             return
 
@@ -84,7 +99,15 @@ with StateFactory() as sf:
             return
 
         with st.spinner("Processing data...", show_time=True):
-            output_df = pl.DataFrame({text_col: texts, count_col: counts})
+            scores = score_sentences(texts, counts, top_percent)
+            output_df = (
+                pl.DataFrame(
+                    {text_col: texts, count_col: counts, SCORE_COL_NAME: scores}
+                )
+                .sort(by=text_col)
+                .sort(by=SCORE_COL_NAME, descending=True)
+                .with_columns(pl.lit(False).alias(REMOVE_COL_NAME))
+            )
 
         scored(output_df)
 
@@ -104,9 +127,34 @@ with StateFactory() as sf:
 
     if selected:
         if selected in output_df_dict:
-            st.header(body=file_dict[selected].name)
-            df = output_df_dict[selected]
-            st.dataframe(df)
+            filename = file_dict[selected].name
+
+            st.header(body=filename)
+
+            if st.button(label="Prepare Download"):
+                edited_df: pl.DataFrame = st.session_state[EDITED_DF_STATE_KEY]
+                filtered_df = edited_df.filter(~pl.col(REMOVE_COL_NAME)).drop(
+                    [SCORE_COL_NAME, REMOVE_COL_NAME]
+                )
+
+                buf = BytesIO()
+                filtered_df.write_excel(buf)
+
+                st.download_button(
+                    label="Download Excel",
+                    data=buf,
+                    file_name=f"{Path(filename).stem}_edited.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary",
+                    icon=":material/download:",
+                )
+
+            df: pl.DataFrame = output_df_dict[selected]
+            disabled_cols = list(df.columns)
+            disabled_cols.remove(REMOVE_COL_NAME)
+            st.session_state[EDITED_DF_STATE_KEY] = st.data_editor(
+                data=df, disabled=disabled_cols
+            )
 
         elif st.session_state[IMPORT_DIALOG_STATE_KEY]:
             import_canceled()
