@@ -19,6 +19,7 @@ with st.sidebar:
     file = st.file_uploader("Upload CSV or Excel files", type=["csv", "xlsx", "xls"])
     if file is not None:
         if file.file_id not in se.files:
+            se.selected = file.file_id
             se.files[file.file_id] = file
             st.rerun()
 
