@@ -2,28 +2,31 @@ import streamlit as st
 import polars as pl
 from pathlib import Path
 
-se = st.session_state
+from lib import StateFactory
 
-if "files" not in se:
-    se.files = {}
+with StateFactory() as sf:
+    files, set_files = sf.state({})
+    selected, set_selected = sf.state("")
 
-if "selected" not in se:
-    se.selected = None
+    def side_button_clicked(id: str):
+        set_selected(id)
 
-with st.sidebar:
-    for id, file in se.files.items():
-        if st.button(file.name, key=id):
-            se.selected = id
-            st.rerun()
+    def file_uploaded(file):
+        id = file.file_id
+        set_files(files | {id: file})
+        set_selected(id)
 
-    file = st.file_uploader("Upload CSV or Excel files", type=["csv", "xlsx", "xls"])
-    if file is not None:
-        if file.file_id not in se.files:
-            se.selected = file.file_id
-            se.files[file.file_id] = file
-            st.rerun()
+    with st.sidebar:
+        for id, file in files.items():
+            if st.button(label=file.name, key=id):
+                side_button_clicked(id)
 
-if se.selected is None:
-    exit()
+        st.file_uploader(
+            label="Upload CSV or Excel files",
+            type=["csv", "xlsx", "xls"],
+            on_change=lambda: file_uploaded(st.session_state["current_file"]),
+            key="current_file",
+        )
 
-st.title(se.files[se.selected].name)
+    if selected in files:
+        st.title(body=files[selected].name)
