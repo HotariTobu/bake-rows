@@ -22,3 +22,8 @@ with st.sidebar:
         if file.file_id not in files:
             st.session_state.files[file.file_id] = file
             st.rerun()
+
+if selected is None:
+    exit()
+
+st.title(st.session_state.files[selected].name)
