@@ -26,4 +26,4 @@ with st.sidebar:
 if selected is None:
     exit()
 
-st.title(st.session_state.files[selected].name)
+st.title(files[selected].name)
