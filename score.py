@@ -193,10 +193,14 @@ def score_sentences(
     df = pl.DataFrame({"keyword": sentences, "count": counts})
     res = add_flags(df, top_percent)
 
+    flags: pl.Series
+
     if 'flag' in res.columns:
-        return res['flag']
+        flags = res['flag']
     else:
-        return res[res.columns[2]]
+        flags = res[res.columns[2]]
+
+    return [1 if flag else 0 for flag in flags]
 
 # --------------------------------------------------------------------
 # 8. CLI
