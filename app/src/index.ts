@@ -75,19 +75,35 @@ const __getColumnValues__ = (
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
   columnIndex: GoogleAppsScript.Integer
 ) => {
-  const maxRow = sheet.getMaxRows();
-  const range = sheet.getRange(2, columnIndex, maxRow, columnIndex);
+  const rowCount = sheet.getMaxRows() - 1;
+  const range = sheet.getRange(2, columnIndex, rowCount, 1);
   const columnValues = range.getValues().map(row => row[0]);
   return columnValues;
 };
 
-const insertOutputSheet = () => {
+const insertSheet = (columns: Record<string, unknown[]>) => {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.insertSheet();
 
   sheet.setTabColor('#FF0000');
 
-  sheet.getRange('A1').setValue('Hello Apps Script!');
+  const headers = Object.keys(columns);
+
+  const rowCount = columns[headers[0]].length;
+  const columnCount = headers.length;
+
+  const headerRange = sheet.getRange(1, 1, 1, columnCount);
+  headerRange.setValues([headers]);
+
+  const values: unknown[][] = [];
+
+  for (let i = 0; i < rowCount; i++) {
+    const row = headers.map(header => columns[header][i]);
+    values.push(row);
+  }
+
+  const range = sheet.getRange(2, 1, rowCount, headers.length);
+  range.setValues(values);
+
   sheet.setFrozenRows(1);
-  sheet.setFrozenColumns(1);
 };

@@ -47,6 +47,40 @@ limitations under the License.
       insertOptions(document.querySelector('select[name="sentences"]'))
       insertOptions(document.querySelector('select[name="counts"]'))
 
+      const process = async (stringBody) => {
+            const { sentences, counts: stringCounts } = stringBody
+            const counts = stringCounts.map(count => parseInt(count))
+
+            const res = await fetch('http://localhost:12500', {
+                  method: 'POST',
+                  headers: {
+                        'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                        sentences,
+                        counts,
+                  })
+            })
+
+            const { scores } = await res.json()
+
+            const columns = {
+                  sentences,
+                  counts,
+                  scores,
+            }
+
+            google.script.run
+                  .withSuccessHandler(console.log)
+                  .withFailureHandler(handleError)
+                  .insertSheet(columns);
+      }
+
+      const handleError = (error) => {
+            alert('エラーが発生しました')
+            console.error(error)
+      }
+
       const handleSubmit = (e) => {
             e.preventDefault();
 
@@ -55,8 +89,8 @@ limitations under the License.
             const columnIndexRecord = Object.fromEntries(formEntries)
 
             google.script.run
-                  .withSuccessHandler(console.log)
-                  .withFailureHandler(console.error)
+                  .withSuccessHandler(process)
+                  .withFailureHandler(handleError)
                   .getColumnValuesRecord(sheetId, columnIndexRecord);
       }
 
