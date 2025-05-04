@@ -1,0 +1,14 @@
+npm create vite
+
+npm install -D @types/node
+
+npx vite build
+
+npm install vite-plugin-singlefile --save-dev
+
+npm i rollup-plugin-prettier rollup-plugin-typescript2
+
+ npm add @google/clasp @types/google-apps-script
+
+  npx rollup -c rollup.config.ts
+   npx rollup --no-treeshake -c rollup.config.ts
